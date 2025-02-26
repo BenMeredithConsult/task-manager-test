@@ -15,9 +15,9 @@ type AirTables = "Task"
 
 
 Airtable.configure({
-  apiKey: 'pat7IGsUTdW6hodET.57f45153411c4790f1facb171b8e350cf6397f8648e8a0ee48f6047bee3900ef', //Ahmed
-})
-const base = Airtable.base('appN9l2gQKpLgPbcJ')
+  apiKey: process.env.NEXT_PUBLIC_AIRTABLE_API_KEY!, //Laurette
+});
+const base = Airtable.base(process.env.NEXT_PUBLIC_AIRTABLE_BASE_ID!);
 
 export async function FetchRecords<T>(table: AirTables, filter?: Record<string, any>, filterByFormula?: string) {
   return new Promise((resolve, reject) => {

@@ -1,166 +1,104 @@
-"use client";
+"use client"
 
-import React, { useEffect, useState } from 'react';
-import { FetchRecords, AddRecord } from '../../lib/utils';
+import Image from "next/image";
 
-interface Task {
-  id: string;
-  Name: string;
-  Description?: string;
-  Assignee?: string;
-  DueDate?: string;
-  Status: 'Pending' | 'In Progress' | 'Completed';
-}
-
-export default function TasksPage() {
-  // État pour stocker les tâches récupérées
-  const [tasks, setTasks] = useState<Task[]>([]);
-  // État pour le chargement et les erreurs
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  // État pour le formulaire de nouvelle tâche
-  const [newTask, setNewTask] = useState<Task>({
-    id: '',
-    Name: '',
-    Description: '',
-    Assignee: '',
-    DueDate: '',
-    Status: 'Pending',
-  });
-
-  // Fonction pour récupérer les tâches depuis Airtable
-  const fetchTasks = async () => {
-    try {
-      const data = await FetchRecords<Task>("Task");
-      setTasks(data as Task[]);
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Récupère les tâches au chargement du composant
-  useEffect(() => {
-    fetchTasks();
-  }, []);
-
-  // Met à jour l'état newTask lors des changements dans les inputs
-  const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    const { name, value } = e.target;
-    setNewTask(prev => ({ ...prev, [name]: value }));
-  };
-
-  // Gère l'envoi du formulaire pour ajouter une nouvelle tâche
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    try {
-      // Appelle la fonction pour ajouter la tâche dans Airtable
-      await AddRecord({ table: "Task", data: newTask });
-      // Après ajout, on récupère de nouveau la liste des tâches
-      fetchTasks();
-      // Réinitialise le formulaire
-      setNewTask({
-        id: '',
-        Name: '',
-        Description: '',
-        Assignee: '',
-        DueDate: '',
-        Status: 'Pending',
-      });
-    } catch (err: any) {
-      setError(err.message);
-    }
-  };
-
-  if (loading)
-    return <p className="text-center text-gray-500">Chargement des tâches...</p>;
-  if (error)
-    return <p className="text-center text-red-500">Erreur : {error}</p>;
-
+export default function Home() {
   return (
-    <div className="max-w-3xl mx-auto p-6 bg-white shadow-lg rounded-lg">
-      <h1 className="text-3xl font-bold text-center text-blue-600 mb-4">
-        Liste des tâches
-      </h1>
+    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
+      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
+        <Image
+          className="dark:invert"
+          src="/next.svg"
+          alt="Next.js logo"
+          width={180}
+          height={38}
+          priority
+        />
+        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
+          <li className="mb-2">
+            Get started by editing{" "}
+            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
+              src/app/page.tsx
+            </code>
+            .
+          </li>
+          <li>Save and see your changes instantly.</li>
+        </ol>
 
-      {/* Formulaire pour ajouter une nouvelle tâche */}
-      <form onSubmit={handleSubmit} className="mb-8">
-        <h2 className="text-xl font-semibold mb-4">Ajouter une nouvelle tâche</h2>
-        <div className="mb-4">
-          <label className="block text-gray-700">Nom de la tâche :</label>
-          <input
-            type="text"
-            name="Name"
-            value={newTask.Name}
-            onChange={handleInputChange}
-            className="w-full border border-gray-300 p-2 rounded"
-            required
-          />
+        <div className="flex gap-4 items-center flex-col sm:flex-row">
+          <a
+            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
+            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <Image
+              className="dark:invert"
+              src="/vercel.svg"
+              alt="Vercel logomark"
+              width={20}
+              height={20}
+            />
+            Deploy now
+          </a>
+          <a
+            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
+            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Read our docs
+          </a>
         </div>
-        <div className="mb-4">
-          <label className="block text-gray-700">Description :</label>
-          <textarea
-            name="Description"
-            value={newTask.Description}
-            onChange={handleInputChange}
-            className="w-full border border-gray-300 p-2 rounded"
-          />
-        </div>
-        <div className="mb-4">
-          <label className="block text-gray-700">Assigné à :</label>
-          <input
-            type="text"
-            name="Assignee"
-            value={newTask.Assignee}
-            onChange={handleInputChange}
-            className="w-full border border-gray-300 p-2 rounded"
-          />
-        </div>
-        <div className="mb-4">
-          <label className="block text-gray-700">Date limite :</label>
-          <input
-            type="date"
-            name="DueDate"
-            value={newTask.DueDate}
-            onChange={handleInputChange}
-            className="w-full border border-gray-300 p-2 rounded"
-          />
-        </div>
-        <button
-          type="submit"
-          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+      </main>
+      
+      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
+        <a
+          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
+          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
+          target="_blank"
+          rel="noopener noreferrer"
         >
-          Ajouter Tâche
-        </button>
-      </form>
-
-      {/* Affichage de la liste des tâches */}
-      {tasks.length === 0 ? (
-        <p className="text-center text-gray-500">Aucune tâche disponible</p>
-      ) : (
-        <ul className="space-y-4">
-          {tasks.map((task) => (
-            <li key={task.id} className="p-4 border border-gray-300 rounded-lg">
-              <h2 className="text-xl font-semibold text-gray-800">{task.Name}</h2>
-              {task.Description && <p className="text-gray-600">{task.Description}</p>}
-              {task.Assignee && (
-                <p className="text-gray-700 font-medium">Assigné à : {task.Assignee}</p>
-              )}
-              {task.DueDate && <p className="text-gray-500">Date limite : {task.DueDate}</p>}
-              <p
-                className={`font-semibold ${
-                  task.Status === "Completed" ? "text-green-600" : "text-orange-600"
-                }`}
-              >
-                Statut : {task.Status}
-              </p>
-            </li>
-          ))}
-        </ul>
-      )}
+          <Image
+            aria-hidden
+            src="/file.svg"
+            alt="File icon"
+            width={16}
+            height={16}
+          />
+          Learn
+        </a>
+        <a
+          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
+          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <Image
+            aria-hidden
+            src="/window.svg"
+            alt="Window icon"
+            width={16}
+            height={16}
+          />
+          Examples
+        </a>
+        <a
+          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
+          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <Image
+            aria-hidden
+            src="/globe.svg"
+            alt="Globe icon"
+            width={16}
+            height={16}
+          />
+          Go to nextjs.org →
+        </a>
+      </footer>
     </div>
   );
 }

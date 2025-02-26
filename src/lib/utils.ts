@@ -1,7 +1,70 @@
-import Airtable from "airtable"
+import Airtable from "airtable";
 
+type AirTables = "Task";
 
-type AirTables = "Task"
+Airtable.configure({
+  apiKey: process.env.NEXT_PUBLIC_AIRTABLE_API_KEY!,
+});
+const base = Airtable.base(process.env.NEXT_PUBLIC_AIRTABLE_BASE_ID!);
+
+export async function FetchRecords<T>(table: AirTables, filter?: Record<string, any>, filterByFormula?: string) {
+  return new Promise((resolve, reject) => {
+    const recordArray: Array<T> = [];
+    const options = {
+      view: 'Grid view',
+      ...filter,
+      ...(filterByFormula ? { filterByFormula } : {})
+    };
+    base(table)
+      .select(options)
+      .eachPage(
+        (records, fetchNextPage) => {
+          for (const record of records) {
+            recordArray.push({
+              id: record.id,
+              ...record.fields,
+            } as T);
+          }
+          fetchNextPage();
+        },
+        (err) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(recordArray);
+          }
+        }
+      );
+  });
+}
+
+export async function UpdateRecord({ table, id, data }: { table: AirTables; id: string; data: any }) {
+  return new Promise((resolve, reject) => {
+    base(table)
+      .update(id, data)
+      .then((record) => resolve(record))
+      .catch((err) => reject(err));
+  });
+}
+
+export async function AddRecord({ table, data }: { table: AirTables; data: any }) {
+  return new Promise((resolve, reject) => {
+    base(table)
+      .create(data)
+      .then((record) => resolve(record))
+      .catch((err) => reject(err));
+  });
+}
+
+export async function DeleteRecord({ table, id }: { table: AirTables; id: string }) {
+  return new Promise((resolve, reject) => {
+    base(table)
+      .destroy(id)
+      .then((record) => resolve(record))
+      .catch((err) => reject(err));
+  });
+}
+
 
 // The columns in the table are defined here
 
@@ -14,7 +77,7 @@ type AirTables = "Task"
 // }
 
 
-Airtable.configure({
+/*Airtable.configure({
   apiKey: process.env.NEXT_PUBLIC_AIRTABLE_API_KEY!, //Laurette
 });
 const base = Airtable.base(process.env.NEXT_PUBLIC_AIRTABLE_BASE_ID!);
@@ -87,4 +150,4 @@ export async function DeleteRecord({ table, id }: { table: AirTables; id: string
         reject(err)
       })
   })
-}
+}*/

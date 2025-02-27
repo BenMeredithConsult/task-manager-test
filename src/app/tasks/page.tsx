@@ -4,15 +4,13 @@ import React, { useEffect, useState } from 'react';
 import { FetchRecords, AddRecord, UpdateRecord, DeleteRecord } from '../../lib/utils';
 
 interface Task {
-    id: string;
-    Name: string;
-    Description?: string;
-    Assignee?: string;  // Assignee en string
-    Image?: string;
-    DueDate?: string;
-    Status: 'Pending' | 'In Progress' | 'Completed';
-  }
-  
+  id: string;
+  Name: string;
+  Description?: string;
+  Image?: string;
+  DueDate?: string;
+  Status: 'Pending' | 'In Progress' | 'Completed';
+}
 
 export default function TasksPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -26,7 +24,6 @@ export default function TasksPage() {
   const [newTask, setNewTask] = useState<Omit<Task, 'id'>>({
     Name: '',
     Description: '',
-    Assignee: '',
     Image: '',
     DueDate: '',
     Status: 'Pending',
@@ -39,7 +36,7 @@ export default function TasksPage() {
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   const [editedTask, setEditedTask] = useState<Partial<Task>>({});
   
-  // Fonction d'upload d'image factice
+  // Fonction d'upload d'image (pour la démonstration, retourne une URL blob)
   const uploadImage = async (file: File): Promise<string> => {
     return URL.createObjectURL(file);
   };
@@ -73,17 +70,14 @@ export default function TasksPage() {
     }
   };
 
-  // Fonction Register inspirée de ta syntaxe
+  // Fonction Register inspirée de ta syntaxe, sans le champ "Assigné à"
   const Register = async () => {
-    // Si le champ "Assignee" est vide, on envoie null
-    const assigneeValue = newTask.Assignee || null;
     try {
       await AddRecord({
         table: "Task",
         data: {
           Name: newTask.Name,
           Description: newTask.Description,
-          Assignee: assigneeValue,
           DueDate: newTask.DueDate,
           Status: "Pending",
           ...(imageFile ? { Image: await uploadImage(imageFile) } : {}),
@@ -98,7 +92,6 @@ export default function TasksPage() {
       setNewTask({
         Name: '',
         Description: '',
-        Assignee: '',
         Image: '',
         DueDate: '',
         Status: 'Pending',
@@ -111,7 +104,6 @@ export default function TasksPage() {
     }
   };
 
-  // Utilisation de Register dans le handleSubmit
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     await Register();
@@ -149,7 +141,6 @@ export default function TasksPage() {
     setEditedTask({
       Name: task.Name,
       Description: task.Description,
-      Assignee: task.Assignee ? (Array.isArray(task.Assignee) ? task.Assignee.join(', ') : task.Assignee) : '',
       DueDate: task.DueDate,
       Status: task.Status,
     });
@@ -164,13 +155,7 @@ export default function TasksPage() {
   
   const handleSaveEdit = async (taskId: string) => {
     try {
-      const { Assignee, ...rest } = editedTask;
-      const updateData = {
-        ...rest,
-        // Envoie directement la valeur ou null si vide
-        Assignee: Assignee || null,
-      };
-      await UpdateRecord({ table: "Task", id: taskId, data: updateData });
+      await UpdateRecord({ table: "Task", id: taskId, data: editedTask });
       setEditingTaskId(null);
       setEditedTask({});
       fetchTasks();
@@ -227,17 +212,6 @@ export default function TasksPage() {
             <textarea
               name="Description"
               value={newTask.Description}
-              onChange={handleInputChange}
-              className="w-full border border-gray-300 p-2 rounded"
-            />
-          </div>
-          {/* Champ "Assigné à" optionnel */}
-          <div className="mb-3">
-            <label className="block text-gray-700">Assigné à (optionnel) :</label>
-            <input
-              type="text"
-              name="Assignee"
-              value={newTask.Assignee}
               onChange={handleInputChange}
               className="w-full border border-gray-300 p-2 rounded"
             />
@@ -318,13 +292,6 @@ export default function TasksPage() {
                     onChange={handleEditChange}
                     className="w-full border border-gray-300 p-2 rounded mb-2"
                   />
-                  <input
-                    type="text"
-                    name="Assignee"
-                    value={editedTask.Assignee || ''}
-                    onChange={handleEditChange}
-                    className="w-full border border-gray-300 p-2 rounded mb-2"
-                  />
                   <select
                     name="Status"
                     value={editedTask.Status || 'Pending'}
@@ -361,11 +328,6 @@ export default function TasksPage() {
                 <div>
                   <h2 className="text-xl font-semibold text-gray-800">{task.Name}</h2>
                   {task.Description && <p className="text-gray-600">{task.Description}</p>}
-                  {task.Assignee && (
-                    <p className="text-gray-700 font-medium">
-                      Assigné à : {Array.isArray(task.Assignee) ? task.Assignee.join(', ') : task.Assignee}
-                    </p>
-                  )}
                   {task.Image && (
                     <img src={task.Image} alt="Task" className="w-32 h-32 object-cover my-2 rounded" />
                   )}

@@ -5,7 +5,7 @@ import { AddRecord } from "@/lib/utils";
 
 
 type Task = {
-    id: string;
+    id?: string;
     Name: string;
     Description: string;
     Assignee: string;

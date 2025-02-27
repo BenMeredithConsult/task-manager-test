@@ -22,6 +22,7 @@ export default function Home() {
   const [showModal, setShowModal] = useState(false);
   const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
 
+  // Fetch tasks by status or all tasks
   const fetchTasks = async (status?: string) => {
     try {
       const filter = status ? `Status="${status}"` : "";
@@ -32,11 +33,11 @@ export default function Home() {
     }
   };
 
+  // Fetch all tasks initially and apply status filter
   useEffect(() => {
     async function fetchData() {
       try {
         const data = await FetchRecords<Task>("Task") as Task[];
-        data.sort((a, b) => new Date(b.DueDate).getTime() - new Date(a.DueDate).getTime());
         setTasks(data);
       } catch (error) {
         console.error("Error fetching tasks:", error);
@@ -69,7 +70,7 @@ export default function Home() {
 
   return (
     <div>
-      <header className="row-start-3 flex gap-6 flxex-wrap items-center justify-center">
+      <header className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
         <nav className="navbar navbar-light bg-light">
           <div className="container flex justify-between items-center">
             <a href="#" className="flex items-center">
@@ -137,22 +138,21 @@ export default function Home() {
                         {task.Status}
                       </span>
                       <div className="flex gap-4">
-                      <button
-                        className="text-blue-500 hover:text-blue-700"
-                        onClick={() => handleEdit(task)}
-                      >
-                        <FaEdit size={20} />
-                      </button>
+                        <button
+                          className="text-blue-500 hover:text-blue-700"
+                          onClick={() => handleEdit(task)}
+                        >
+                          <FaEdit size={20} />
+                        </button>
 
-                      <button
-                        className="text-red-500 hover:text-red-700"
-                        onClick={() => handleDelete(task.id)}
-                      >
-                        <FaTrash size={20} />
-                      </button>
-                    </div>
+                        <button
+                          className="text-red-500 hover:text-red-700"
+                          onClick={() => handleDelete(task.id)}
+                        >
+                          <FaTrash size={20} />
+                        </button>
+                      </div>
                     </li>
-                    
                   </div>
                 ))
               )}
@@ -162,7 +162,7 @@ export default function Home() {
 
         {showModal && (
           <TaskForm
-            task={taskToEdit}  // Assurez-vous que cette prop est bien définie dans TaskFormProps
+            task={taskToEdit}
             onClose={() => {
               setTaskToEdit(null);
               setShowModal(false);
@@ -172,7 +172,9 @@ export default function Home() {
         )}
       </main>
 
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center"></footer>
+      <footer>
+        <p>© 2025 Note Book App. Tous droits réservés.</p>
+      </footer>
     </div>
   );
 }

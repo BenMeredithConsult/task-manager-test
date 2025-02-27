@@ -41,3 +41,36 @@ span {
 .center {
   text-align: center;
 }
+
+/* Responsivité avec Media Queries */
+@media (max-width: 768px) {
+  header {
+      padding: 20px;
+      text-align: center;
+  }
+
+
+}
+
+
+@media (max-width: 480px) {
+  header {
+      padding: 15px;
+      text-align: center;
+  }
+
+  #titre_header {
+      font-size: 1rem;
+  }
+}
+
+footer {
+  background-color: brown;
+  color: white;
+  text-align: center;
+  padding: 10px;
+  border-bottom-right-radius: 8px;
+  border-bottom-left-radius: 8px;
+  position: relative;
+  box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.1);
+}

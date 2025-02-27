@@ -70,7 +70,7 @@ export default function TasksPage() {
     }
   };
 
-  // Fonction Register inspirée de ta syntaxe, sans le champ "Assigné à"
+  // Fonction Register pour enregistrer la tâche
   const Register = async () => {
     try {
       await AddRecord({
@@ -127,7 +127,9 @@ export default function TasksPage() {
     }
   };
   
+  // Confirmation avant suppression
   const handleDelete = async (task: Task) => {
+    if (!window.confirm("Êtes-vous sûr(e) de vouloir supprimer cette tâche ?")) return;
     try {
       await DeleteRecord({ table: "Task", id: task.id });
       fetchTasks();

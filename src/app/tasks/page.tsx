@@ -4,33 +4,46 @@ import React, { useEffect, useState } from 'react';
 import { FetchRecords, AddRecord, UpdateRecord, DeleteRecord } from '../../lib/utils';
 
 interface Task {
-  id: string;
-  Name: string;
-  Description?: string;
-  Assignee?: string;
-  DueDate?: string;
-  Status: 'Pending' | 'In Progress' | 'Completed';
-}
+    id: string;
+    Name: string;
+    Description?: string;
+    Assignee?: string;  // Assignee en string
+    Image?: string;
+    DueDate?: string;
+    Status: 'Pending' | 'In Progress' | 'Completed';
+  }
+  
 
 export default function TasksPage() {
-  // État pour stocker la liste des tâches
   const [tasks, setTasks] = useState<Task[]>([]);
-  // États de chargement et d'erreur
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  // État pour gérer le formulaire d'ajout d'une nouvelle tâche
-  const [newTask, setNewTask] = useState<Task>({
-    id: '',
+  
+  // Contrôle l'affichage du formulaire
+  const [showForm, setShowForm] = useState(false);
+  
+  // État du formulaire d'ajout (sans l'id)
+  const [newTask, setNewTask] = useState<Omit<Task, 'id'>>({
     Name: '',
     Description: '',
     Assignee: '',
+    Image: '',
     DueDate: '',
     Status: 'Pending',
   });
-  // État pour filtrer les tâches selon leur statut
+  
+  // Pour gérer le fichier image à uploader (optionnel)
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  
   const [filterStatus, setFilterStatus] = useState<string>("All");
+  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
+  const [editedTask, setEditedTask] = useState<Partial<Task>>({});
+  
+  // Fonction d'upload d'image factice
+  const uploadImage = async (file: File): Promise<string> => {
+    return URL.createObjectURL(file);
+  };
 
-  // Fonction pour récupérer les tâches depuis Airtable
   const fetchTasks = async () => {
     setLoading(true);
     try {
@@ -42,42 +55,77 @@ export default function TasksPage() {
       setLoading(false);
     }
   };
-
+  
   useEffect(() => {
     fetchTasks();
   }, []);
-
-  // Gère la modification des inputs du formulaire
+  
   const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
     setNewTask(prev => ({ ...prev, [name]: value }));
   };
+  
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setImageFile(e.target.files[0]);
+    }
+  };
 
-  // Envoi du formulaire pour ajouter une nouvelle tâche
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+  // Fonction Register inspirée de ta syntaxe
+  const Register = async () => {
+    // Si le champ "Assignee" est vide, on envoie null
+    const assigneeValue = newTask.Assignee || null;
     try {
-      // Exclure le champ "id" avant d'envoyer les données à Airtable
-      const { id, ...taskData } = newTask;
-      await AddRecord({ table: "Task", data: taskData });
+      await AddRecord({
+        table: "Task",
+        data: {
+          Name: newTask.Name,
+          Description: newTask.Description,
+          Assignee: assigneeValue,
+          DueDate: newTask.DueDate,
+          Status: "Pending",
+          ...(imageFile ? { Image: await uploadImage(imageFile) } : {}),
+        },
+      }).then(() => {
+        alert("Enregistré avec succès");
+      }).catch((error: any) => {
+        alert(error.message);
+      });
       fetchTasks();
-      // Réinitialise le formulaire
+      // Réinitialisation du formulaire
       setNewTask({
-        id: '',
         Name: '',
         Description: '',
         Assignee: '',
+        Image: '',
         DueDate: '',
         Status: 'Pending',
       });
+      setImageFile(null);
+      setShowForm(false);
     } catch (err: any) {
+      alert(err.message);
       setError(err.message);
     }
   };
 
-  // Met à jour le statut d'une tâche à "Completed"
+  // Utilisation de Register dans le handleSubmit
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    await Register();
+  };
+  
+  const handleMarkInProgress = async (task: Task) => {
+    try {
+      await UpdateRecord({ table: "Task", id: task.id, data: { Status: "In Progress" } });
+      fetchTasks();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  };
+  
   const handleMarkComplete = async (task: Task) => {
     try {
       await UpdateRecord({ table: "Task", id: task.id, data: { Status: "Completed" } });
@@ -86,8 +134,7 @@ export default function TasksPage() {
       setError(err.message);
     }
   };
-
-  // Supprime une tâche
+  
   const handleDelete = async (task: Task) => {
     try {
       await DeleteRecord({ table: "Task", id: task.id });
@@ -96,120 +143,271 @@ export default function TasksPage() {
       setError(err.message);
     }
   };
-
-  // Filtre les tâches selon le statut sélectionné
+  
+  const handleEditClick = (task: Task) => {
+    setEditingTaskId(task.id);
+    setEditedTask({
+      Name: task.Name,
+      Description: task.Description,
+      Assignee: task.Assignee ? (Array.isArray(task.Assignee) ? task.Assignee.join(', ') : task.Assignee) : '',
+      DueDate: task.DueDate,
+      Status: task.Status,
+    });
+  };
+  
+  const handleEditChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) => {
+    const { name, value } = e.target;
+    setEditedTask(prev => ({ ...prev, [name]: value }));
+  };
+  
+  const handleSaveEdit = async (taskId: string) => {
+    try {
+      const { Assignee, ...rest } = editedTask;
+      const updateData = {
+        ...rest,
+        // Envoie directement la valeur ou null si vide
+        Assignee: Assignee || null,
+      };
+      await UpdateRecord({ table: "Task", id: taskId, data: updateData });
+      setEditingTaskId(null);
+      setEditedTask({});
+      fetchTasks();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  };
+  
+  const handleCancelEdit = () => {
+    setEditingTaskId(null);
+    setEditedTask({});
+  };
+  
   const filteredTasks = tasks.filter(task =>
     filterStatus === "All" || task.Status === filterStatus
   );
-
+  
   if (loading)
     return <p className="text-center text-gray-500">Chargement des tâches...</p>;
   if (error)
     return <p className="text-center text-red-500">Erreur : {error}</p>;
-
+  
   return (
-    <div className="max-w-3xl mx-auto p-6 bg-white shadow-lg rounded-lg">
-      <h1 className="text-3xl font-bold text-center text-blue-600 mb-4">
-        Liste des tâches
-      </h1>
-
-      {/* Filtrage par statut */}
-      <div className="flex justify-center space-x-4 mb-6">
+    <div className="max-w-4xl mx-auto p-4">
+      <h1 className="text-3xl font-bold text-center text-indigo-600 mb-6">Liste des tâches</h1>
+      
+      {/* Bouton pour afficher/masquer le formulaire */}
+      <div className="flex justify-center mb-4">
+        <button 
+          onClick={() => setShowForm(!showForm)}
+          className="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700"
+        >
+          {showForm ? "Annuler" : "Ajouter une tâche"}
+        </button>
+      </div>
+      
+      {/* Formulaire d'ajout, masqué par défaut */}
+      {showForm && (
+        <form onSubmit={handleSubmit} className="max-w-md mx-auto p-4 bg-white border rounded shadow mb-6">
+          <h2 className="text-xl font-semibold text-center text-indigo-600 mb-4">Nouvelle tâche</h2>
+          <div className="mb-3">
+            <label className="block text-gray-700">Nom de la tâche :</label>
+            <input
+              type="text"
+              name="Name"
+              value={newTask.Name}
+              onChange={handleInputChange}
+              className="w-full border border-gray-300 p-2 rounded"
+              required
+            />
+          </div>
+          <div className="mb-3">
+            <label className="block text-gray-700">Description :</label>
+            <textarea
+              name="Description"
+              value={newTask.Description}
+              onChange={handleInputChange}
+              className="w-full border border-gray-300 p-2 rounded"
+            />
+          </div>
+          {/* Champ "Assigné à" optionnel */}
+          <div className="mb-3">
+            <label className="block text-gray-700">Assigné à (optionnel) :</label>
+            <input
+              type="text"
+              name="Assignee"
+              value={newTask.Assignee}
+              onChange={handleInputChange}
+              className="w-full border border-gray-300 p-2 rounded"
+            />
+          </div>
+          <div className="mb-3">
+            <label className="block text-gray-700">État :</label>
+            <select
+              name="Status"
+              value={newTask.Status}
+              onChange={handleInputChange}
+              className="w-full border border-gray-300 p-2 rounded"
+            >
+              <option value="Pending">En attente</option>
+              <option value="In Progress">En cours</option>
+              <option value="Completed">Terminée</option>
+            </select>
+          </div>
+          <div className="mb-3">
+            <label className="block text-gray-700">Date limite :</label>
+            <input
+              type="date"
+              name="DueDate"
+              value={newTask.DueDate}
+              onChange={handleInputChange}
+              className="w-full border border-gray-300 p-2 rounded"
+            />
+          </div>
+          <div className="mb-3">
+            <label className="block text-gray-700">Image (optionnel) :</label>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleImageChange}
+              className="w-full"
+            />
+          </div>
+          <button
+            type="submit"
+            className="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 w-full"
+          >
+            Enregistrer la tâche
+          </button>
+        </form>
+      )}
+      
+      {/* Filtrage des tâches */}
+      <div className="flex justify-center space-x-2 mb-4">
         {["All", "Pending", "In Progress", "Completed"].map(status => (
           <button 
             key={status}
             onClick={() => setFilterStatus(status)}
-            className={`px-4 py-2 rounded ${filterStatus === status ? "bg-blue-600 text-white" : "bg-gray-200 text-gray-700"}`}
+            className={`px-3 py-1 rounded ${filterStatus === status ? "bg-indigo-600 text-white" : "bg-gray-300 text-gray-800"}`}
           >
             {status === "All" ? "Tous" : status}
           </button>
         ))}
       </div>
-
-      {/* Formulaire pour ajouter une nouvelle tâche */}
-      <form onSubmit={handleSubmit} className="mb-8">
-        <h2 className="text-xl font-semibold mb-4">Ajouter une nouvelle tâche</h2>
-        <div className="mb-4">
-          <label className="block text-gray-700">Nom de la tâche :</label>
-          <input
-            type="text"
-            name="Name"
-            value={newTask.Name}
-            onChange={handleInputChange}
-            className="w-full border border-gray-300 p-2 rounded"
-            required
-          />
-        </div>
-        <div className="mb-4">
-          <label className="block text-gray-700">Description :</label>
-          <textarea
-            name="Description"
-            value={newTask.Description}
-            onChange={handleInputChange}
-            className="w-full border border-gray-300 p-2 rounded"
-          />
-        </div>
-        <div className="mb-4">
-          <label className="block text-gray-700">Assigné à :</label>
-          <input
-            type="text"
-            name="Assignee"
-            value={newTask.Assignee}
-            onChange={handleInputChange}
-            className="w-full border border-gray-300 p-2 rounded"
-          />
-        </div>
-        <div className="mb-4">
-          <label className="block text-gray-700">Date limite :</label>
-          <input
-            type="date"
-            name="DueDate"
-            value={newTask.DueDate}
-            onChange={handleInputChange}
-            className="w-full border border-gray-300 p-2 rounded"
-          />
-        </div>
-        <button
-          type="submit"
-          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-        >
-          Ajouter Tâche
-        </button>
-      </form>
-
-      {/* Affichage des tâches filtrées */}
+      
+      {/* Affichage de la liste des tâches */}
       {filteredTasks.length === 0 ? (
         <p className="text-center text-gray-500">Aucune tâche disponible</p>
       ) : (
         <ul className="space-y-4">
-          {filteredTasks.map((task) => (
-            <li key={task.id} className="p-4 border border-gray-300 rounded-lg">
-              <h2 className="text-xl font-semibold text-gray-800">{task.Name}</h2>
-              {task.Description && <p className="text-gray-600">{task.Description}</p>}
-              {task.Assignee && (
-                <p className="text-gray-700 font-medium">Assigné à : {task.Assignee}</p>
-              )}
-              {task.DueDate && <p className="text-gray-500">Date limite : {task.DueDate}</p>}
-              <p className={`font-semibold ${task.Status === "Completed" ? "text-green-600" : "text-orange-600"}`}>
-                Statut : {task.Status}
-              </p>
-              {/* Boutons pour mettre à jour ou supprimer la tâche */}
-              <div className="mt-4 flex space-x-4">
-                {task.Status !== "Completed" && (
-                  <button 
-                    onClick={() => handleMarkComplete(task)}
-                    className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700"
+          {filteredTasks.map(task => (
+            <li key={task.id} className="p-4 border border-gray-300 rounded bg-white">
+              {editingTaskId === task.id ? (
+                <div>
+                  <input
+                    type="text"
+                    name="Name"
+                    value={editedTask.Name || ''}
+                    onChange={handleEditChange}
+                    className="w-full border border-gray-300 p-2 rounded mb-2"
+                  />
+                  <textarea
+                    name="Description"
+                    value={editedTask.Description || ''}
+                    onChange={handleEditChange}
+                    className="w-full border border-gray-300 p-2 rounded mb-2"
+                  />
+                  <input
+                    type="text"
+                    name="Assignee"
+                    value={editedTask.Assignee || ''}
+                    onChange={handleEditChange}
+                    className="w-full border border-gray-300 p-2 rounded mb-2"
+                  />
+                  <select
+                    name="Status"
+                    value={editedTask.Status || 'Pending'}
+                    onChange={handleEditChange}
+                    className="w-full border border-gray-300 p-2 rounded mb-2"
                   >
-                    Marquer comme complétée
-                  </button>
-                )}
-                <button 
-                  onClick={() => handleDelete(task)}
-                  className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700"
-                >
-                  Supprimer
-                </button>
-              </div>
+                    <option value="Pending">En attente</option>
+                    <option value="In Progress">En cours</option>
+                    <option value="Completed">Terminée</option>
+                  </select>
+                  <input
+                    type="date"
+                    name="DueDate"
+                    value={editedTask.DueDate || ''}
+                    onChange={handleEditChange}
+                    className="w-full border border-gray-300 p-2 rounded mb-2"
+                  />
+                  <div className="flex space-x-2">
+                    <button
+                      onClick={() => handleSaveEdit(task.id)}
+                      className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700"
+                    >
+                      Sauvegarder
+                    </button>
+                    <button
+                      onClick={handleCancelEdit}
+                      className="bg-gray-600 text-white px-3 py-1 rounded hover:bg-gray-700"
+                    >
+                      Annuler
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <h2 className="text-xl font-semibold text-gray-800">{task.Name}</h2>
+                  {task.Description && <p className="text-gray-600">{task.Description}</p>}
+                  {task.Assignee && (
+                    <p className="text-gray-700 font-medium">
+                      Assigné à : {Array.isArray(task.Assignee) ? task.Assignee.join(', ') : task.Assignee}
+                    </p>
+                  )}
+                  {task.Image && (
+                    <img src={task.Image} alt="Task" className="w-32 h-32 object-cover my-2 rounded" />
+                  )}
+                  {task.DueDate && <p className="text-gray-500">Date limite : {task.DueDate}</p>}
+                  <p className={`font-semibold ${
+                    task.Status === "Completed" ? "text-green-600" : 
+                    task.Status === "In Progress" ? "text-blue-600" : "text-yellow-600"
+                  }`}>
+                    Statut : {task.Status}
+                  </p>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {task.Status === "Pending" && (
+                      <button 
+                        onClick={() => handleMarkInProgress(task)}
+                        className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700"
+                      >
+                        Mettre en cours
+                      </button>
+                    )}
+                    {task.Status === "In Progress" && (
+                      <button 
+                        onClick={() => handleMarkComplete(task)}
+                        className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700"
+                      >
+                        Terminer
+                      </button>
+                    )}
+                    <button 
+                      onClick={() => handleEditClick(task)}
+                      className="bg-yellow-600 text-white px-3 py-1 rounded hover:bg-yellow-700"
+                    >
+                      Modifier
+                    </button>
+                    <button 
+                      onClick={() => handleDelete(task)}
+                      className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700"
+                    >
+                      Supprimer
+                    </button>
+                  </div>
+                </div>
+              )}
             </li>
           ))}
         </ul>

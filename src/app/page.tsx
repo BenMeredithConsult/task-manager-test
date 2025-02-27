@@ -13,20 +13,20 @@ export default function Home() {
   }, []);
 
   const Confirmation = (taskId: string) => {
-    if (confirm("VOulez vous supprimer l'element suivant?")) {
+    if (confirm("Voulez-vous supprimer cet élément ?")) {
       DeleteRecord({ table: "Task", id: taskId })
         .then(() => {
-          alert("supprimer avec succès");
+          alert("Supprimé avec succès");
           window.location.reload();
         })
         .catch((error) => alert(error.message));
     } else {
-      alert("error");
+      alert("Annulé");
     }
   };
 
   const Done = (taskId: string) => {
-    if (confirm("VOulez vous terminer la tâche suivant?")) {
+    if (confirm("Voulez-vous terminer cette tâche ?")) {
       UpdateRecord({ table: "Task", id: taskId, data: { Status: "Completed" } })
         .then(() => {
           alert("Terminée avec succès");
@@ -34,146 +34,89 @@ export default function Home() {
         })
         .catch((error) => alert(error.message));
     } else {
-      alert("error");
+      alert("Annulé");
     }
   };
 
   if (allData) {
     return (
-      <div className="grid grid-rows-[20px_1fr_20px]  min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-        <div className="flex flex-wrap justify-between min-w-full mb-10">
-          <h1 className="text-2xl">Listes des Tâches</h1>
-          <a
-            href="/addTasks"
-            className="btn py-2 px-4 border-2 dark:border-blue-300 border-blue-700 dark:bg-blue-300  dark:text-black rounded"
-          >
-            Ajouter une Tâche
-          </a>
-        </div>
-        <div className="flex flex-wrap sm:flex-col lg:flex-row gap-16 justify-center">
-          {allData.map((data: any, index: number) => (
-            <>
-              {data?.Status == "Completed" ? (
-                <article
-                  key={index}
-                  className="flex lg:w-3/12 shadow-xl sm:w-2/4 0px flex-col items-start  justify-between bg-gray-500  dark:bg-white dark:text-black border-solid border-2 border-black rounded-xl p-5 cursor-pointer"
-                >
-                  <div className="flex justify-between items-center flex-wrap text-lg">
-                    <p className="relative z-10 rounded-full bg-yellow-50 px-3 py-1.5 font-medium text-green-600 hover:text-green-700 hover:bg-yellow-50">
-                      {data?.Status}
-                    </p>
-                  </div>
-                  <div className="group relative">
-                    <h3 className="mt-3 text-xl/6 font-semibold text-gray-900 group-hover:text-gray-600">
-                      <a href="#">
-                        <span className="absolute inset-0"></span>
-                        {data.Name}
-                      </a>
-                    </h3>
-                    <p className="mt-5 line-clamp-3 text-lg/6 text-gray-600">
-                      {data.Description}
-                    </p>
-                    <p className="mt-5 line-clamp-3 text-lg/6 text-gray-600">
-                      <strong>Deadline: </strong>
-                      {data.DueDate}
-                    </p>
-                  </div>
-                  <div className=" mt-8 flex flex-wrap items-center gap-x-4">
-                    {/* <a
-            href="{% url 'activity_details' activity.id %}"
-            className="btn bg-blue-600 text-white hover:bg-blue-800 cursor-pointer border-solid border-2 rounded p-2"
-            >Details</a
-          > */}
-                    <a
-                      href="#"
-                      onClick={() => Confirmation(data.id)}
-                      className="btn bg-red-600 text-white hover:bg-red-800 cursor-pointer border-solid border-2 rounded p-2"
+      <div className="min-h-screen bg-gradient-to-r from-blue-50 to-purple-50 p-8 pb-20">
+        <div className="max-w-7xl mx-auto">
+          {/* En-tête */}
+          <div className="flex justify-between items-center mb-10">
+            <h1 className="text-3xl font-bold text-gray-900">Liste des Tâches</h1>
+            <a
+              href="/addTasks"
+              className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-all"
+            >
+              Ajouter une Tâche
+            </a>
+          </div>
+
+          {/* Liste des tâches */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {allData.map((data: any, index: number) => (
+              <div
+                key={index}
+                className={`bg-white rounded-xl shadow-lg p-6 cursor-pointer transition-all hover:shadow-xl ${
+                  data?.Status === "Completed" ? "opacity-80" : ""
+                }`}
+              >
+                {/* Statut */}
+                <div className="flex justify-between items-center mb-4">
+                  <span
+                    className={`px-3 py-1 rounded-full text-sm font-medium ${
+                      data?.Status === "Completed"
+                        ? "bg-green-100 text-green-700"
+                        : "bg-yellow-100 text-yellow-700"
+                    }`}
+                  >
+                    {data?.Status}
+                  </span>
+                </div>
+
+                {/* Titre et description */}
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">{data.Name}</h3>
+                <p className="text-gray-600 mb-4">{data.Description}</p>
+                <p className="text-gray-600 mb-4">
+                  <strong>Deadline : </strong>
+                  {data.DueDate}
+                </p>
+
+                {/* Actions */}
+                <div className="flex gap-2 mt-6">
+                  <button
+                    onClick={() => Confirmation(data.id)}
+                    className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-all"
+                  >
+                    Supprimer
+                  </button>
+                  <a
+                    href={`/edit/${data.id}`}
+                    className="bg-yellow-600 text-white px-4 py-2 rounded-lg hover:bg-yellow-700 transition-all"
+                  >
+                    Modifier
+                  </a>
+                  {data.Status !== "Completed" && (
+                    <button
+                      onClick={() => Done(data.id)}
+                      className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-all"
                     >
-                      Supprimer
-                    </a>
-                    <a
-                      href={`/edit/${data.id}`}
-                      className="btn bg-yellow-600 text-white hover:bg-yellow-800 cursor-pointer border-solid border-2 rounded p-2"
-                    >
-                      Modifier
-                    </a>
-                    {data.Status != "Completed" ? (
-                      <a
-                        href="#"
-                        onClick={() => Done(data.id)}
-                        className="btn bg-green-600 text-white hover:bg-green-800 cursor-pointer border-solid border-2 rounded p-2"
-                      >
-                        Terminer
-                      </a>
-                    ) : (
-                      <></>
-                    )}
-                  </div>
-                </article>
-              ) : (
-                <article
-                  key={index}
-                  className="flex lg:w-3/12 shadow-xl sm:w-2/4 0px flex-col items-start  justify-between  dark:bg-white dark:text-black border-solid border-2 border-black rounded-xl p-5 cursor-pointer"
-                >
-                  <div className="flex justify-between items-center flex-wrap text-lg">
-                    <p className="relative z-10 rounded-full bg-yellow-50 px-3 py-1.5 font-medium text-orange-600 hover:text-orange-700 hover:bg-yellow-50">
-                      {data?.Status}
-                    </p>
-                  </div>
-                  <div className="group relative">
-                    <h3 className="mt-3 text-xl/6 font-semibold text-gray-900 group-hover:text-gray-600">
-                      <a href="#">
-                        <span className="absolute inset-0"></span>
-                        {data.Name}
-                      </a>
-                    </h3>
-                    <p className="mt-5 line-clamp-3 text-lg/6 text-gray-600">
-                      {data.Description}
-                    </p>
-                    <p className="mt-5 line-clamp-3 text-lg/6 text-gray-600">
-                      <strong>Deadline: </strong>
-                      {data.DueDate}
-                    </p>
-                  </div>
-                  <div className=" mt-8 flex flex-wrap items-center gap-x-4">
-                    {/* <a
-      href="{% url 'activity_details' activity.id %}"
-      className="btn bg-blue-600 text-white hover:bg-blue-800 cursor-pointer border-solid border-2 rounded p-2"
-      >Details</a
-    > */}
-                    <a
-                      href="#"
-                      onClick={() => Confirmation(data.id)}
-                      className="btn bg-red-600 text-white hover:bg-red-800 cursor-pointer border-solid border-2 rounded p-2"
-                    >
-                      Supprimer
-                    </a>
-                    <a
-                      href={`/edit/${data.id}`}
-                      className="btn bg-yellow-600 text-white hover:bg-yellow-800 cursor-pointer border-solid border-2 rounded p-2"
-                    >
-                      Modifier
-                    </a>
-                    {data.Status != "Completed" ? (
-                      <a
-                        href="#"
-                        onClick={() => Done(data.id)}
-                        className="btn bg-green-600 text-white hover:bg-green-800 cursor-pointer border-solid border-2 rounded p-2"
-                      >
-                        Terminer
-                      </a>
-                    ) : (
-                      <></>
-                    )}
-                  </div>
-                </article>
-              )}
-            </>
-          ))}
+                      Terminer
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     );
   } else {
-    <div className="loader"></div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-r from-blue-50 to-purple-50">
+        <div className="loader"></div>
+      </div>
+    );
   }
 }

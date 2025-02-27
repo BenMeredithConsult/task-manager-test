@@ -1,6 +1,5 @@
 import Airtable from "airtable"
 
-
 type AirTables = "Task"
 
 // The columns in the table are defined here
@@ -25,9 +24,9 @@ export async function FetchRecords<T>(table: AirTables, filter?: Record<string, 
     base(table)
       .select({
         view: 'Grid view',
-        ...filter,
-        filterByFormula: filterByFormula
-
+        ...(filter ? filter : {}), // Ensure `filter` is an object or empty
+        ...(filterByFormula ? { filterByFormula } : {}), // Ensure `filterByFormula` is only passed if it's a valid string
+      
       })
       .eachPage(
         (records, fetchNextPage) => {

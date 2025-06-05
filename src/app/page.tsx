@@ -66,7 +66,7 @@ export default function TasksPage() {
             <input
               type="text"
               className="border p-2 rounded flex-grow text-black focus-within:outline-amber-200"
-              placeholder="Ajouter une tâche"
+              placeholder="Ajouter une  tâche"
               value={taskTitle}
               onChange={(e) => setTaskTitle(e.target.value)}
             />

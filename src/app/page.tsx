@@ -1,104 +1,125 @@
-"use client"
+"use client";
 
+import Header from "@/components/Header";
+import Footer from "@/components/Footer";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 
-export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+type Task = {
+  id: number;
+  title: string;
+  completed: boolean;
+  image?: string;
+};
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
+export default function TasksPage() {
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [taskTitle, setTaskTitle] = useState("");
+  const [imageURL, setImageURL] = useState<string>("");
+
+  useEffect(() => {
+    const storedTasks = localStorage.getItem("tasks");
+    if (storedTasks) {
+      setTasks(JSON.parse(storedTasks));
+    }
+  }, []);
+  
+  const saveTasks = (tasks: Task[]) => {
+    setTasks(tasks);
+    localStorage.setItem("tasks", JSON.stringify(tasks));
+  };
+
+  const addTask = () => {
+    if (!taskTitle.trim()) return;
+
+    const newTask: Task = {
+      id: Date.now(),
+      title: taskTitle,
+      completed: false,
+      image: imageURL, 
+    };
+
+    const updatedTasks = [...tasks, newTask];
+    saveTasks(updatedTasks);
+    setTaskTitle("");
+    setImageURL(""); 
+  };
+
+  const toggleTask = (id: number) => {
+    const updatedTasks = tasks.map((task) =>
+      task.id === id ? { ...task, completed: !task.completed } : task
+    );
+    saveTasks(updatedTasks);
+  };
+
+  const deleteTask = (id: number) => {
+    const updatedTasks = tasks.filter((task) => task.id !== id);
+    saveTasks(updatedTasks);
+  };
+
+  return (
+    <div>
+      <Header />
+      <div className="min-h-screen flex justify-center items-center">
+        <div className="p-8 bg-white shadow-lg rounded-lg w-1/2 text-center">
+          <div className="mb-4 flex space-x-2">
+            <input
+              type="text"
+              className="border p-2 rounded flex-grow text-black focus-within:outline-amber-200"
+              placeholder="Ajouter une tâche"
+              value={taskTitle}
+              onChange={(e) => setTaskTitle(e.target.value)}
             />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+            <input
+              type="url"
+              className="border p-2 rounded flex-grow text-black focus-within:outline-amber-200"
+              placeholder="URL de l'image"
+              value={imageURL}
+              onChange={(e) => setImageURL(e.target.value)}
+            />
+            <button
+              className="bg-amber-500 text-white px-4 py-2 rounded"
+              onClick={addTask}
+            >
+              Ajouter
+            </button>
+          </div>
+
+          <ul>
+            {tasks.map((task) => (
+              <li key={task.id} className="flex justify-between items-center p-2 border rounded mb-2">
+                <span className={`text-black ${task.completed ? "line-through" : ""}`}>
+                  {task.title}
+                  {task.image && (
+                    <Image
+                      src={task.image}
+                      alt="Task Image"
+                      width={40}
+                      height={40}
+                      className="object-cover rounded"
+                    />
+                  )}
+                </span>
+                <div>
+                  <button
+                    onClick={() => toggleTask(task.id)}
+                    className="bg-green-500 text-white px-2 py-1 mr-2 rounded"
+                  >
+                    {task.completed ? "Annuler" : "Terminer"}
+                  </button>
+                  <button
+                    onClick={() => deleteTask(task.id)}
+                    className="bg-red-500 text-white px-2 py-1 rounded"
+                  >
+                    Supprimer
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
         </div>
-      </main>
-      
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+      </div>
+      <Footer />
     </div>
   );
 }
